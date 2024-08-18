@@ -26,15 +26,23 @@ public final class Bouncepad {
         }
 
         classLoader = (BouncepadClassLoader) ClassLoader.getSystemClassLoader();
-
-        // ImagineBreaker components cannot be statically instantiated in BouncepadClassLoader
-        // as MethodHandles rely on SystemClassLoader being instantiated first
-        ImagineBreaker.openBootModules();
-        ImagineBreaker.wipeFieldFilters();
-        ImagineBreaker.wipeMethodFilters();
+        classLoader.configureClasspath();
 
         initLogger();
         logger.info("Initializing Bouncepad");
+
+        var imagineBreakerLogger = LogManager.getLogger("ImagineBreaker");
+        imagineBreakerLogger.info("Opening Boot Modules");
+        ImagineBreaker.openBootModules();
+        imagineBreakerLogger.info("Wiping Field Filters");
+        ImagineBreaker.wipeFieldFilters();
+        imagineBreakerLogger.info("Wiping Method Filters");
+        ImagineBreaker.wipeMethodFilters();
+
+        for (var field : ClassLoader.class.getDeclaredFields()) {
+            logger.info(field);
+        }
+
         initBlackboard();
         logger.info("Initializing Default Blackboard");
         logger.info("Processing Starting Arguments");
@@ -70,6 +78,10 @@ public final class Bouncepad {
 
     public static Path assetsDirectory() {
         return assetsDirectory;
+    }
+
+    public static ProcessHandle process() {
+        return ProcessHandle.current();
     }
 
     private static void initLogger() {

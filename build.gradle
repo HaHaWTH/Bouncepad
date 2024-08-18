@@ -10,6 +10,7 @@ archivesBaseName = 'bouncepad'
 
 java {
     toolchain {
+        vendor = JvmVendorSpec.AZUL
         languageVersion.set(JavaLanguageVersion.of(21))
     }
 }

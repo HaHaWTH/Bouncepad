@@ -14,7 +14,7 @@ public class BumpASMAPITest {
     private TransformingClassLoader transformatingClassLoader;
 
     @BeforeEach
-    private void beforeEach() {
+    public void beforeEach() {
         this.transformatingClassLoader = new TransformingClassLoader(new BumpASMAPITransformer());
         this.transformatingClassLoader.addClassForTransform("com.cleanroommc.bouncepad.test.util.TestClassVisitor");
     }

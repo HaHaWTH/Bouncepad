@@ -1,4 +1,4 @@
-package com.cleanroommc.bouncepad.impl.asm.logger;
+package com.cleanroommc.bouncepad.impl.logger;
 
 import net.minecrell.terminalconsole.TerminalConsoleAppender;
 import org.apache.logging.log4j.core.LogEvent;
