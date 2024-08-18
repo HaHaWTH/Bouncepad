@@ -25,7 +25,6 @@ public class BouncepadClassLoader extends LaunchClassLoader {
 
     protected BouncepadClassLoader(String name) {
         super(name);
-        this.configureDefaultExclusions();
     }
 
     public <T> Class<T> getClass(String name) {
@@ -64,9 +63,32 @@ public class BouncepadClassLoader extends LaunchClassLoader {
         }
     }
 
+    /**
+     * <ol>
+     *     <li>Default ClassLoader Exclusions:<ul>
+     *         <li>java.</li>
+     *         <li>sun.</li>
+     *         <li>org.lwjgl.</li>
+     *         <li>org.apache.logging.</li>
+     *         <li>net.minecraft.launchwrapper.</li>
+     *     </ul></li>
+     *     <li>Bouncepad ClassLoader Exclusions:<ul>
+     *         <li>com.cleanroommc.bouncepad.</li>
+     *         <li>zone.rong.imaginebreaker.</li>
+     *     </ul></li>
+     *     <li>Default Transformer Exclusions:<ul>
+     *         <li>javax.</li>
+     *         <li>argo.</li>
+     *         <li>org.objectweb.asm.</li>
+     *         <li>com.google.common.</li>
+     *         <li>org.bouncycastle.</li>
+     *         <li><s>net.minecraft.launchwrapper.injector.</s></li>
+     *     </ul></li>
+     * </ol>
+     */
+    @Override
     protected void configureDefaultExclusions() {
         this.addClassLoaderExclusion("com.cleanroommc.bouncepad.");
-        this.addClassLoaderExclusion("net.minecraft.launchwrapper.");
         this.addClassLoaderExclusion("zone.rong.imaginebreaker.");
     }
 

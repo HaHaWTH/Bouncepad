@@ -153,6 +153,39 @@ public class LaunchClassLoader extends URLClassLoader {
         }
     }
 
+    /**
+     * <ol>
+     *     <li>Default ClassLoader Exclusions:<ul>
+     *         <li>java.</li>
+     *         <li>sun.</li>
+     *         <li>org.lwjgl.</li>
+     *         <li>org.apache.logging.</li>
+     *         <li>net.minecraft.launchwrapper.</li>
+     *     </ul></li>
+     *     <li>Default Transformer Exclusions:<ul>
+     *         <li>javax.</li>
+     *         <li>argo.</li>
+     *         <li>org.objectweb.asm.</li>
+     *         <li>com.google.common.</li>
+     *         <li>org.bouncycastle.</li>
+     *         <li><s>net.minecraft.launchwrapper.injector.</s></li>
+     *     </ul></li>
+     * </ol>
+     */
+    protected void configureDefaultExclusions() {
+        this.addClassLoaderExclusion("java.");
+        this.addClassLoaderExclusion("sun.");
+        this.addClassLoaderExclusion("org.lwjgl.");
+        this.addClassLoaderExclusion("org.apache.logging.");
+        this.addClassLoaderExclusion("net.minecraft.launchwrapper.");
+
+        this.addTransformerExclusion("javax.");
+        this.addTransformerExclusion("argo.");
+        this.addTransformerExclusion("org.objectweb.asm.");
+        this.addTransformerExclusion("com.google.common.");
+        this.addTransformerExclusion("org.bouncycastle.");
+    }
+
     protected byte[] runTransformers(String untransformedName, String transformedName, byte[] classBytes) throws FailedClassTransformationException {
         byte[] transformedBytes = classBytes;
         IClassTransformer currentTransformer = null;
@@ -268,39 +301,6 @@ public class LaunchClassLoader extends URLClassLoader {
     // Keep binary compatibility
     public void clearNegativeEntries(Set<String> entries) {
         throw new UnsupportedOperationException("LaunchClassLoader no longer offers negative entries.");
-    }
-
-    /**
-     * <ol>
-     *     <li>Default ClassLoader Exclusions:<ul>
-     *         <li>java.</li>
-     *         <li>sun.</li>
-     *         <li>org.lwjgl.</li>
-     *         <li>org.apache.logging.</li>
-     *         <li>net.minecraft.launchwrapper.</li>
-     *     </ul></li>
-     *     <li>Default Transformer Exclusions:<ul>
-     *         <li>javax.</li>
-     *         <li>argo.</li>
-     *         <li>org.objectweb.asm.</li>
-     *         <li>com.google.common.</li>
-     *         <li>org.bouncycastle.</li>
-     *         <li><s>net.minecraft.launchwrapper.injector.</s></li>
-     *     </ul></li>
-     * </ol>
-     */
-    private void configureDefaultExclusions() {
-        this.addClassLoaderExclusion("java.");
-        this.addClassLoaderExclusion("sun.");
-        this.addClassLoaderExclusion("org.lwjgl.");
-        this.addClassLoaderExclusion("org.apache.logging.");
-        this.addClassLoaderExclusion("net.minecraft.launchwrapper.");
-
-        this.addTransformerExclusion("javax.");
-        this.addTransformerExclusion("argo.");
-        this.addTransformerExclusion("org.objectweb.asm.");
-        this.addTransformerExclusion("com.google.common.");
-        this.addTransformerExclusion("org.bouncycastle.");
     }
 
     private byte[] getJavaClassBytes(String name) throws IOException {
