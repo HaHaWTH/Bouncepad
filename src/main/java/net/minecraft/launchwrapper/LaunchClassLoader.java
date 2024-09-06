@@ -43,8 +43,8 @@ public class LaunchClassLoader extends URLClassLoader {
      * <ol>
      *     <li>If a class name starts with any classloader exception, delegate to {@link LaunchClassLoader#parent#loadClass(String)}</li>
      *     <li>If a class name starts with any transformer exception, delegate to {@link URLClassLoader#findClass}</li>
-     *     <li>transformName with {@link IClassNameTransformer} if present, and check for an existing loaded class</li>
-     *     <li>untransformName, find the last separator and use to determine the package name and file path of the .class file</li>
+     *     <li>transformedName with {@link IClassNameTransformer} if present, and check for an existing loaded class</li>
+     *     <li>untransformedName, find the last separator and use to determine the package name and file path of the .class file</li>
      *     <li>Open a URLConnection using findCodeSourceConnectionFor on the determined filename</li>
      *     <li>Check package sealing for the given URLConnection, unless the untransformed name starts with "net.minecraft.", giving a severe warning if the package is already sealed. Otherwise, create and register a new Package.</li>
      *     <li>runTransformers on getClassBytes</li>
@@ -79,7 +79,7 @@ public class LaunchClassLoader extends URLClassLoader {
                     int lastDot = untransformedName.lastIndexOf('.');
                     var packageName = (lastDot == -1) ? "" : untransformedName.substring(0, lastDot);
                     var classPath = untransformedName.replace('.', '/') + ".class";
-                    var connection = findCodeSourceConnectionFor(classPath);
+                    var connection = findConnectionFor(classPath);
                     CodeSource codeSource;
                     byte[] classBytes = null;
                     if (!packageName.isEmpty()) {
@@ -88,7 +88,7 @@ public class LaunchClassLoader extends URLClassLoader {
                             CodeSigner[] codeSigners = null;
                             try {
                                 this.getAndVerifyPackage(packageName, jarConnection.getManifest(), packageUrl);
-                                classBytes = transformClass ? this.getClassBytes(untransformedName) : this.getJavaClassBytes(untransformedName);
+                                classBytes = this.getClassBytes(untransformedName);
                                 codeSigners = jarConnection.getJarEntry().getCodeSigners();
                             } catch (IOException ignore) { }
                             // LaunchClassLoader: uses nested jar!file URL instead of the jar URL
@@ -105,7 +105,7 @@ public class LaunchClassLoader extends URLClassLoader {
                     }
                     if (classBytes == null) {
                         try {
-                            classBytes = transformClass ? this.getClassBytes(untransformedName) : this.getJavaClassBytes(untransformedName);
+                            classBytes = this.getClassBytes(untransformedName);
                         } catch (IOException ignore) { }
                     }
                     if (transformClass) {
@@ -136,6 +136,7 @@ public class LaunchClassLoader extends URLClassLoader {
      */
     @Deprecated
     public void registerTransformer(String transformerName) {
+        Bouncepad.logger().fatal("LaunchClassLoader's registerTransformer is deprecated, please refrain from registering transformers this way.");
         try {
             Class<?> transformerClass = Class.forName(transformerName, true, this);
             if (!IClassTransformer.class.isAssignableFrom(transformerClass)) {
@@ -151,6 +152,12 @@ public class LaunchClassLoader extends URLClassLoader {
         } catch (Exception e) {
             Bouncepad.logger().error("Legacy-style transformer [{}] registration failed.", transformerName, e);
         }
+    }
+
+    // Keep binary compatibility
+    @Deprecated
+    public void clearNegativeEntries(Set<String> entries) {
+        Bouncepad.logger().fatal("LaunchClassLoader's clearNegativeEntries is deprecated, please refrain from calling this method.");
     }
 
     /**
@@ -239,7 +246,7 @@ public class LaunchClassLoader extends URLClassLoader {
         return this.classNameTransformer == null ? name : this.classNameTransformer.unmapClassName(name);
     }
 
-    public URLConnection findCodeSourceConnectionFor(final String name) {
+    public URLConnection findConnectionFor(final String name) {
         try {
             final URL url = this.findResource(name);
             if (url == null) {
@@ -293,17 +300,7 @@ public class LaunchClassLoader extends URLClassLoader {
         return Boolean.parseBoolean(sealed);
     }
 
-    // Keep binary compatibility
-    public byte[] getClassBytes(String name) {
-        throw new UnsupportedOperationException("LaunchClassLoader no longer offers class to bytes helper.");
-    }
-
-    // Keep binary compatibility
-    public void clearNegativeEntries(Set<String> entries) {
-        throw new UnsupportedOperationException("LaunchClassLoader no longer offers negative entries.");
-    }
-
-    private byte[] getJavaClassBytes(String name) throws IOException {
+    public byte[] getClassBytes(String name) throws IOException {
         var classPath = name.replace('.', '/') + ".class";
         var resourceUrl = findResource(classPath);
         var connection = resourceUrl == null ? null : resourceUrl.openConnection();
