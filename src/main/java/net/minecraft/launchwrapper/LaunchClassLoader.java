@@ -9,6 +9,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.reflect.Method;
 import java.net.JarURLConnection;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -35,6 +36,20 @@ public abstract class LaunchClassLoader extends URLClassLoader {
 
     private List<URL> sources;
     private ClassLoader parent = getClass().getClassLoader();
+    private final List<ClassLoader> children = new ArrayList<>();
+    private ClassLoader from = null;
+    private static final Method MD_FIND_CLASS;
+
+    static {
+        Method mdFind;
+        try {
+            mdFind = ClassLoader.class.getDeclaredMethod("findClass", String.class);
+            mdFind.setAccessible(true);
+        } catch (Throwable e) {
+            mdFind = null;
+        }
+        MD_FIND_CLASS = mdFind;
+    }
 
     private List<IClassTransformer> transformers = new ArrayList<>(2);
     private Set<IClassTransformer> superTransformers = ConcurrentHashMap.newKeySet();
@@ -130,8 +145,13 @@ public abstract class LaunchClassLoader extends URLClassLoader {
         }
     }
 
+    public void addChild(ClassLoader child) {
+        children.add(child);
+    }
+
     @Override
     public Class<?> findClass(final String name) throws ClassNotFoundException {
+        if (this.equals(from)) return null;
         if (invalidClasses.contains(name)) {
             throw new ClassNotFoundException(name);
         }
@@ -220,6 +240,26 @@ public abstract class LaunchClassLoader extends URLClassLoader {
             cachedClasses.put(transformedName, clazz);
             return clazz;
         } catch (Throwable e) {
+            if (!children.isEmpty()) {
+
+                from = this;
+                for (ClassLoader child : children) {
+                    final String transformedName = transformName(name);
+
+                    try {
+                        Class<?> classe = (Class<?>) MD_FIND_CLASS.invoke(child, transformedName);
+                        if (classe != null) {
+                            cachedClasses.put(name, classe);
+                            from = null;
+                            return classe;
+                        }
+                    } catch (Exception e1) {
+                        from = null;
+                    }
+
+                }
+                from = null;
+            }
             invalidClasses.add(name);
             if (DEBUG) {
                 LogWrapper.log(Level.ERROR, "Exception encountered attempting classloading of %s", name, e);
