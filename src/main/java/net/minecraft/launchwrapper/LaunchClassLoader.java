@@ -44,7 +44,7 @@ public abstract class LaunchClassLoader extends URLClassLoader {
         Method mdFind;
         try {
             mdFind = ClassLoader.class.getDeclaredMethod("findClass", String.class);
-            mdFind.setAccessible(true);
+            mdFind.trySetAccessible();
         } catch (Throwable e) {
             mdFind = null;
         }
