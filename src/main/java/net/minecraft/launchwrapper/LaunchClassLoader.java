@@ -1,6 +1,5 @@
 package net.minecraft.launchwrapper;
 
-import com.cleanroommc.bouncepad.ClassUtils;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 
