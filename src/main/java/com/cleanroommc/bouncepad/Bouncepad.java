@@ -30,11 +30,11 @@ public class Bouncepad {
     public static File assetsDir;
 
     public static void main(String[] args) {
+        runImagineBreaker();
         Launch.blackboard = InternalBlackboard.INSTANCE.map;
         classLoader = new BouncepadClassLoader(getClassPathURLs());
         Launch.classLoader = classLoader;
         Thread.currentThread().setContextClassLoader(classLoader);
-        runImagineBreaker();
         launch(args);
     }
 
