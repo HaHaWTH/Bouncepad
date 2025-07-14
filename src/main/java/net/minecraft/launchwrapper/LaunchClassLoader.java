@@ -1,5 +1,6 @@
 package net.minecraft.launchwrapper;
 
+import com.cleanroommc.bouncepad.ClassUtils;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 
@@ -241,7 +242,6 @@ public abstract class LaunchClassLoader extends URLClassLoader {
             return clazz;
         } catch (Throwable e) {
             if (!children.isEmpty()) {
-
                 from = this;
                 for (ClassLoader child : children) {
                     final String transformedName = transformName(name);
@@ -259,8 +259,7 @@ public abstract class LaunchClassLoader extends URLClassLoader {
 
                 }
                 from = null;
-            }
-            invalidClasses.add(name);
+            } else invalidClasses.add(name); // TODO Add correct detection
             if (DEBUG) {
                 LogWrapper.log(Level.ERROR, "Exception encountered attempting classloading of %s", name, e);
                 if (DEBUG_FINER) {
