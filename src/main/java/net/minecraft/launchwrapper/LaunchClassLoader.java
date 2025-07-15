@@ -39,6 +39,7 @@ public abstract class LaunchClassLoader extends URLClassLoader {
     private final List<ClassLoader> children = new ArrayList<>();
     private ClassLoader from = null;
     private static final Method MD_FIND_CLASS;
+    public static boolean childLoadingEnabled = false;
 
     static {
         Method mdFind;
@@ -240,7 +241,8 @@ public abstract class LaunchClassLoader extends URLClassLoader {
             cachedClasses.put(transformedName, clazz);
             return clazz;
         } catch (Throwable e) {
-            if (!children.isEmpty()) {
+            boolean hasChildren = !children.isEmpty();
+            if (childLoadingEnabled && hasChildren) {
                 from = this;
                 for (ClassLoader child : children) {
                     final String transformedName = transformName(name);
@@ -258,7 +260,8 @@ public abstract class LaunchClassLoader extends URLClassLoader {
 
                 }
                 from = null;
-            } else invalidClasses.add(name); // TODO Add correct detection
+            }
+            if (childLoadingEnabled || !hasChildren) invalidClasses.add(name);
             if (DEBUG) {
                 LogWrapper.log(Level.ERROR, "Exception encountered attempting classloading of %s", name, e);
                 if (DEBUG_FINER) {
