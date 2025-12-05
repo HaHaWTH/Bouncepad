@@ -114,6 +114,35 @@ public abstract class LaunchClassLoader extends URLClassLoader {
         }
     }
 
+    private static final Map<String, File> PLUGIN_CLASS_MAP = new ConcurrentHashMap<>();
+    private static volatile boolean pluginsScanned = false;
+
+    private void scanPlugins() {
+        if (pluginsScanned) return;
+        synchronized (PLUGIN_CLASS_MAP) {
+            if (pluginsScanned) return;
+            File pluginDir = new File(Launch.minecraftHome, "plugins");
+            if (pluginDir.exists() && pluginDir.isDirectory()) {
+                File[] jars = pluginDir.listFiles((dir, name) -> name.toLowerCase(Locale.ROOT).endsWith(".jar"));
+                if (jars != null) {
+                    for (File jar : jars) {
+                        try (JarFile jf = new JarFile(jar)) {
+                            jf.stream().forEach(entry -> {
+                                if (entry.getName().endsWith(".class")) {
+                                    String path = entry.getName();
+                                    String className = path.substring(0, path.length() - 6).replace('/', '.');
+                                    PLUGIN_CLASS_MAP.putIfAbsent(className, jar);
+                                }
+                            });
+                        } catch (Exception ignored) {
+                        }
+                    }
+                }
+            }
+            pluginsScanned = true;
+        }
+    }
+
     public void registerTransformer(String transformerClassName) {
         try {
             IClassTransformer transformer = (IClassTransformer) loadClass(transformerClassName).newInstance();
@@ -181,6 +210,13 @@ public abstract class LaunchClassLoader extends URLClassLoader {
             URLConnection urlConnection = findCodeSourceConnectionFor(fileName);
 
             CodeSigner[] signers = null;
+
+            if (urlConnection == null) {
+                scanPlugins();
+                if (PLUGIN_CLASS_MAP.containsKey(untransformedName)) {
+                    throw new ClassNotFoundException(name);
+                }
+            }
 
             if (lastDot > -1 && !untransformedName.startsWith("net.minecraft.")) {
                 if (urlConnection instanceof JarURLConnection jarURLConnection) {
@@ -459,6 +495,24 @@ public abstract class LaunchClassLoader extends URLClassLoader {
             final URL classResource = findResource(resourcePath);
 
             if (classResource == null) {
+                scanPlugins();
+                File pluginJar = PLUGIN_CLASS_MAP.get(name);
+                if (pluginJar != null) {
+                    InputStream jarStream = null;
+                    try (JarFile jf = new JarFile(pluginJar)) {
+                        JarEntry entry = jf.getJarEntry(name.replace('.', '/') + ".class");
+                        if (entry != null) {
+                            jarStream = jf.getInputStream(entry);
+                            final byte[] data = readFully(jarStream);
+                            resourceCache.put(name, data);
+                            if (DEBUG) LogWrapper.log(Level.DEBUG, "Loaded plugin bytes for Mixin: %s from %s", name, pluginJar.getName());
+                            return data;
+                        }
+                    } catch (Exception ignored) {
+                    } finally {
+                        closeSilently(jarStream);
+                    }
+                }
                 if (DEBUG) LogWrapper.log(Level.DEBUG,"Failed to find class resource %s", resourcePath);
                 negativeResourceCache.add(name);
                 return null;
