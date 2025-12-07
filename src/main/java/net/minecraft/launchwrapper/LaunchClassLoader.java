@@ -127,6 +127,9 @@ public abstract class LaunchClassLoader extends URLClassLoader {
                 if (jars != null) {
                     for (File jar : jars) {
                         try (JarFile jf = new JarFile(jar)) {
+                            if (jf.getEntry("plugin.yml") == null) {
+                                continue;
+                            }
                             jf.stream().forEach(entry -> {
                                 if (entry.getName().endsWith(".class")) {
                                     String path = entry.getName();
