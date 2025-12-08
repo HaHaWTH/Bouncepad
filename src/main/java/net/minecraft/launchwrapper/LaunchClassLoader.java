@@ -114,12 +114,12 @@ public abstract class LaunchClassLoader extends URLClassLoader {
         }
     }
 
-    private static final Map<String, File> PLUGIN_CLASS_MAP = new ConcurrentHashMap<>();
-    private static volatile boolean pluginsScanned = false;
+    private final Map<String, File> pluginClass2JarMap = new ConcurrentHashMap<>();
+    private volatile boolean pluginsScanned = false;
 
     private void scanPlugins() {
         if (pluginsScanned) return;
-        synchronized (PLUGIN_CLASS_MAP) {
+        synchronized (pluginClass2JarMap) {
             if (pluginsScanned) return;
             File pluginDir = new File(Launch.minecraftHome, "plugins");
             if (pluginDir.exists() && pluginDir.isDirectory()) {
@@ -134,7 +134,7 @@ public abstract class LaunchClassLoader extends URLClassLoader {
                                 if (entry.getName().endsWith(".class")) {
                                     String path = entry.getName();
                                     String className = path.substring(0, path.length() - 6).replace('/', '.');
-                                    PLUGIN_CLASS_MAP.putIfAbsent(className, jar);
+                                    pluginClass2JarMap.putIfAbsent(className, jar);
                                 }
                             });
                         } catch (Exception ignored) {
@@ -216,7 +216,7 @@ public abstract class LaunchClassLoader extends URLClassLoader {
 
             if (urlConnection == null) {
                 scanPlugins();
-                if (PLUGIN_CLASS_MAP.containsKey(untransformedName)) {
+                if (pluginClass2JarMap.containsKey(untransformedName)) {
                     throw new ClassNotFoundException(name);
                 }
             }
@@ -499,7 +499,7 @@ public abstract class LaunchClassLoader extends URLClassLoader {
 
             if (classResource == null) {
                 scanPlugins();
-                File pluginJar = PLUGIN_CLASS_MAP.get(name);
+                File pluginJar = pluginClass2JarMap.get(name);
                 if (pluginJar != null) {
                     InputStream jarStream = null;
                     try (JarFile jf = new JarFile(pluginJar)) {
